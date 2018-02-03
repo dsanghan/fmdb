@@ -7,13 +7,28 @@ Pod::Spec.new do |s|
   s.author = { 'August Mueller' => 'gus@flyingmeat.com' }
   s.source = { :git => 'https://github.com/ccgus/fmdb.git', :tag => "#{s.version}" }
   s.requires_arc = true
-  s.default_subspec = 'standard'  
+  s.default_subspec = 'standard'
+
+  # common: for internal use only
+  s.subspec 'common' do |ss|
+    ss.source_files = 'src/fmdb/FM*.{h,m}'
+    ss.exclude_files = 'src/fmdb.m'
+  end
+
+  # common_FTS: for internal use only
+  s.subspec 'common_FTS' do |ss|
+    ss.source_files = 'src/extra/fts3/*.{h,m}'
+    ss.pod_target_xcconfig = { 'OTHER_CFLAGS' => '$(inherited) -DSQLITE_ENABLE_FTS4=1 -DSQLITE_ENABLE_FTS3_PARENTHESIS=1' }
+  end
 
   # use the built-in library version of sqlite3
   s.subspec 'standard' do |ss|
     ss.library = 'sqlite3'
-    ss.source_files = 'src/fmdb/FM*.{h,m}'
-    ss.exclude_files = 'src/fmdb.m'
+    ss.dependency 'FMDB/common'
+
+    ss.subspec 'FTS' do |sss|
+      sss.dependency 'FMDB/common_FTS'
+    end
   end
 
   # use the built-in library version of sqlite3 with custom FTS tokenizer source files
@@ -26,8 +41,12 @@ Pod::Spec.new do |s|
   s.subspec 'standalone' do |ss|
     ss.xcconfig = { 'OTHER_CFLAGS' => '$(inherited) -DFMDB_SQLITE_STANDALONE' }
     ss.dependency 'sqlite3'
-    ss.source_files = 'src/fmdb/FM*.{h,m}'
-    ss.exclude_files = 'src/fmdb.m'
+    ss.dependency 'FMDB/common'
+
+    ss.subspec 'FTS' do |sss|
+      sss.dependency 'sqlite3/fts'
+      sss.dependency 'FMDB/common_FTS'
+    end
   end
 
   # build with FTS support and custom FTS tokenizer source files
@@ -41,9 +60,13 @@ Pod::Spec.new do |s|
   # use SQLCipher and enable -DSQLITE_HAS_CODEC flag
   s.subspec 'SQLCipher' do |ss|
     ss.dependency 'SQLCipher'
-    ss.source_files = 'src/fmdb/FM*.{h,m}'
-    ss.exclude_files = 'src/fmdb.m'
+    ss.dependency 'FMDB/common'
     ss.xcconfig = { 'OTHER_CFLAGS' => '$(inherited) -DSQLITE_HAS_CODEC -DHAVE_USLEEP=1' }
+
+    ss.subspec 'FTS' do |sss|
+      sss.dependency 'SQLCipher/fts'
+      sss.dependency 'FMDB/common_FTS'
+    end
   end
   
 end
